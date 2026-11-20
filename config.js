@@ -11,14 +11,6 @@ window.WEDDING = {
   // RSVPs are emailed here through formsubmit.co
   rsvpEmail: "mayukhraj1994@gmail.com",
 
-  // Background music — played through YouTube's official player (shown as a small card).
-  // youtube = the video id from the link (youtu.be/<id>). Leave empty ("") to remove music.
-  youtube: "",
-  songTitle: "I Will Spend My Whole Life Loving You",
-  songArtist: "Kina Grannis & Imaginary Future",
-  // Alternatively an MP3 you own the rights to, e.g. "audio/music.mp3" (used only if youtube is empty)
-  music: "",
-
   // Drives the countdown (IST)
   weddingDate: "2027-02-15T17:00:00+05:30",
 

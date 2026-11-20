@@ -443,7 +443,7 @@
     let yt = null, ready = false, pending = false;
     window.onYouTubeIframeAPIReady = () => {
       yt = new YT.Player('yt-player', {
-        width: 220, height: 200, videoId: C.youtube,
+        width: 200, height: 200, videoId: C.youtube,
         playerVars: { loop: 1, playlist: C.youtube, playsinline: 1, rel: 0, iv_load_policy: 3, cc_load_policy: 0 },
         events: {
           onReady: () => { ready = true; yt.setVolume(Math.round(level.v)); if (pending) { pending = false; yt.playVideo(); } },

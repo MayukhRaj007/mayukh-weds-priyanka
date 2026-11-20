@@ -13,7 +13,7 @@ window.WEDDING = {
 
   // Background music — played through YouTube's official player (shown as a small card).
   // youtube = the video id from the link (youtu.be/<id>). Leave empty ("") to remove music.
-  youtube: "3dVhZuyltII",
+  youtube: "",
   songTitle: "I Will Spend My Whole Life Loving You",
   songArtist: "Kina Grannis & Imaginary Future",
   // Alternatively an MP3 you own the rights to, e.g. "audio/music.mp3" (used only if youtube is empty)

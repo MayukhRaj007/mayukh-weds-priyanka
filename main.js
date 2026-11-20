@@ -427,6 +427,78 @@
     ScrollTrigger.refresh();
   }
 
+  /* ---------------- music: official YouTube player (preferred) or an MP3 ---------------- */
+  const soundBtn = $('#sound'), card = $('#yt-card');
+  const music = { src: null, wanted: false, quiet: false }; // quiet = we're pausing it ourselves
+  const level = { v: 0 };
+  function syncUI(on) {
+    music.wanted = on;
+    soundBtn.classList.toggle('on', on);
+    soundBtn.setAttribute('aria-label', on ? 'Pause music' : 'Play music');
+    soundBtn.setAttribute('data-cursor', on ? 'Mute' : 'Music');
+  }
+  if (C.youtube) {
+    $('#yt-title').textContent = C.songTitle || 'Now playing';
+    $('#yt-artist').textContent = C.songArtist || '';
+    let yt = null, ready = false, pending = false;
+    window.onYouTubeIframeAPIReady = () => {
+      yt = new YT.Player('yt-player', {
+        width: 220, height: 200, videoId: C.youtube,
+        playerVars: { loop: 1, playlist: C.youtube, playsinline: 1, rel: 0, iv_load_policy: 3, cc_load_policy: 0 },
+        events: {
+          onReady: () => { ready = true; yt.setVolume(Math.round(level.v)); if (pending) { pending = false; yt.playVideo(); } },
+          onStateChange: e => {
+            card.classList.toggle('playing', e.data === 1);
+            // keep the top-bar button in sync when the guest uses YouTube's own play/pause
+            if (e.data === 1 && !music.wanted) { syncUI(true); gsap.to(level, { v: music.src.max, duration: 1, onUpdate: music.src.volume }); }
+            if (e.data === 2 && music.wanted && !music.quiet) syncUI(false);
+          }
+        }
+      });
+    };
+    const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s);
+    music.src = {
+      max: 70,
+      play: () => { card.classList.add('show'); if (ready) yt.playVideo(); else pending = true; },
+      pause: () => { pending = false; if (ready) yt.pauseVideo(); },
+      stop: () => card.classList.remove('show'),
+      volume: () => { if (ready) yt.setVolume(Math.round(level.v)); }
+    };
+    $('#yt-close').addEventListener('click', () => setMusic(false));
+  } else {
+    card.remove();
+    if (C.music) {
+      const a = new Audio(C.music); a.loop = true; a.preload = 'auto'; a.volume = 0;
+      a.addEventListener('error', () => { music.src = null; soundBtn.hidden = true; });
+      music.src = { max: 50, play: () => { const p = a.play(); p && p.catch(() => syncUI(false)); }, pause: () => a.pause(), stop: () => {}, volume: () => { a.volume = level.v / 100; } };
+    }
+  }
+  function setMusic(on) {
+    const m = music.src; if (!m) return;
+    syncUI(on); gsap.killTweensOf(level);
+    if (on) { music.quiet = false; m.play(); gsap.to(level, { v: m.max, duration: 2.5, ease: 'power1.in', onUpdate: m.volume }); }
+    else { music.quiet = true; gsap.to(level, { v: 0, duration: .8, onUpdate: m.volume, onComplete: () => { m.pause(); m.stop(); } }); }
+  }
+  soundBtn.addEventListener('click', () => setMusic(!music.wanted));
+  // pause while the tab is in the background, resume when back
+  document.addEventListener('visibilitychange', () => {
+    const m = music.src; if (!m || !music.wanted) return;
+    gsap.killTweensOf(level);
+    if (document.hidden) { music.quiet = true; m.pause(); }
+    else { music.quiet = false; m.play(); level.v = 0; m.volume(); gsap.to(level, { v: m.max, duration: 1.5, onUpdate: m.volume }); }
+  });
+  // loader gate: a click is required for browsers to allow sound
+  function gate() {
+    if (!music.src) return Promise.resolve();
+    const box = $('.ld-enter'); box.hidden = false;
+    gsap.from('.ld-btn', { y: 20, opacity: 0, stagger: .1, duration: .8, ease: 'power3.out' });
+    return new Promise(res => {
+      const go = on => { soundBtn.hidden = false; if (on) setMusic(true); gsap.to(box, { opacity: 0, y: 10, duration: .4, onComplete: () => { box.hidden = true; res(); } }); };
+      $('.ld-music').addEventListener('click', () => go(true), { once: true });
+      $('.ld-quiet').addEventListener('click', () => go(false), { once: true });
+    });
+  }
+
   /* ---------------- intro ---------------- */
   async function intro() {
     hideStrokes($('.ld-mandala')); hideStrokes($('#mandala'));
@@ -437,6 +509,7 @@
       .to(counter, { v: 100, duration: 2.2, ease: 'power2.inOut', onUpdate: () => { num.textContent = pad2(Math.round(counter.v)); } }, 0)
       .from('.ld-word', { opacity: 0, letterSpacing: '.6em', duration: 1.6, ease: 'power3.out' }, .2);
     await Promise.all([document.fonts.ready, new Promise(r => ld.eventCallback('onComplete', r))]);
+    await gate();
 
     // splits after fonts
     const heroChars = $$('.ht').flatMap(h => SplitText.create(h, { type: 'chars', charsClass: 'char' }).chars);
